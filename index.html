@@ -16,16 +16,19 @@
         <div>Перемещайте камеру для обнаружения поверхности</div>
     </div>
     
-    <!-- Блок для отображения ошибок -->
-    <div class="error-message" id="errorMessage">
-        <button class="close-button" onclick="document.getElementById('errorMessage').style.display='none'">×</button>
-        <div class="error-title" id="errorTitle">Произошла ошибка</div>
-        <div id="errorText">Пожалуйста, попробуйте перезагрузить страницу</div>
-        <div class="error-details" id="errorDetails"></div>
+    <!-- Блок для отображения ошибок - ИСПРАВЛЕНО -->
+    <div class="error-overlay" id="errorOverlay">
+        <div class="error-message">
+            <div class="error-title" id="errorTitle">Произошла ошибка</div>
+            <div class="error-text" id="errorText">Пожалуйста, попробуйте перезагрузить страницу</div>
+            <div class="error-details" id="errorDetails"></div>
+            <button class="reload-button" onclick="window.location.reload()">Перезагрузить</button>
+        </div>
+        <button class="close-button" onclick="document.getElementById('errorOverlay').style.display='none'">Закрыть</button>
     </div>
     
     <!-- Инструкция для пользователя -->
-    <div class="instruction" id="instruction">Наведите на плоскость и коснитесь экрана для размещения модели 3</div>
+    <div class="instruction" id="instruction">Наведите на плоскость и коснитесь экрана для размещения модели 4</div>
     
     <!-- AR-сцена -->
     <a-scene 
@@ -56,37 +59,45 @@
     </a-scene>
 
     <script>
-        // Функция для отображения ошибок
+        // Функция для отображения ошибок - ИСПРАВЛЕНО
         function showError(title, message, details) {
-            const errorMessage = document.getElementById('errorMessage');
+            const errorOverlay = document.getElementById('errorOverlay');
             const errorTitle = document.getElementById('errorTitle');
             const errorText = document.getElementById('errorText');
             const errorDetails = document.getElementById('errorDetails');
             
             errorTitle.textContent = title;
             errorText.textContent = message;
-            errorDetails.textContent = details || '';
             
-            errorMessage.style.display = 'block';
+            if (details) {
+                errorDetails.textContent = details;
+                errorDetails.style.display = 'block';
+            } else {
+                errorDetails.style.display = 'none';
+            }
+            
+            errorOverlay.style.display = 'flex';
             document.querySelector('.arjs-loader').style.display = 'none';
+            document.getElementById('instruction').style.display = 'none';
         }
         
         // Глобальная обработка ошибок
         window.addEventListener('error', function(event) {
             showError(
                 'Непредвиденная ошибка', 
-                'В работе приложения произошла ошибка', 
-                `Ошибка: ${event.message} (${event.filename}:${event.lineno})`
+                'В работе приложения произошла ошибка. Попробуйте перезагрузить страницу.', 
+                `Ошибка: ${event.message}\nФайл: ${event.filename}\nСтрока: ${event.lineno}`
             );
             console.error(event.error);
         });
         
         // Обработка ошибок в промисах
         window.addEventListener('unhandledrejection', function(event) {
+            const reason = event.reason || {};
             showError(
                 'Ошибка загрузки', 
-                'Проблема при загрузке ресурсов', 
-                event.reason ? event.reason.message : 'Неизвестная ошибка'
+                'Проблема при загрузке ресурсов. Проверьте подключение к интернету.', 
+                reason.message || 'Неизвестная ошибка promise'
             );
             console.error(event.reason);
         });
@@ -96,13 +107,15 @@
             document.querySelector('.arjs-loader').style.display = 'none';
             
             // Проверяем поддержку AR
-            if (!AFRAME.systems.arjs.isWebXRCameraActive) {
-                showError(
-                    'AR не поддерживается', 
-                    'Ваше устройство или браузер не поддерживают AR-функции', 
-                    'Попробуйте обновить браузер или использовать другое устройство'
-                );
-            }
+            setTimeout(() => {
+                if (!AFRAME.systems.arjs || !AFRAME.systems.arjs.isWebXRCameraActive) {
+                    showError(
+                        'AR не поддерживается', 
+                        'Ваше устройство или браузер не поддерживают AR-функции.\nПопробуйте использовать:\n- Safari на iPhone (iOS 13+)\n- Chrome на Android (9.0+)', 
+                        'Проверьте поддержку WebXR: https://caniuse.com/webxr'
+                    );
+                }
+            }, 2000);
         });
         
         // Обработка жестов
@@ -115,7 +128,7 @@
                         } catch (error) {
                             showError(
                                 'Ошибка размещения модели', 
-                                'Не удалось разместить модель', 
+                                'Не удалось разместить модель. Убедитесь, что:\n1. Плоскость обнаружена\n2. Модель загружена', 
                                 error.message
                             );
                         }
@@ -128,7 +141,7 @@
                 const plane = document.getElementById('plane');
                 
                 // Проверка обнаружения плоскости
-                if (!plane.object3D.position) {
+                if (!plane || !plane.object3D || !plane.object3D.position) {
                     throw new Error('Плоскость не обнаружена. Продолжайте сканировать поверхность.');
                 }
                 
@@ -145,8 +158,8 @@
                 model.addEventListener('model-error', function() {
                     showError(
                         'Ошибка загрузки модели', 
-                        'Не удалось загрузить 3D-модель', 
-                        'Проверьте подключение к интернету или URL модели'
+                        'Не удалось загрузить 3D-модель. Возможные причины:\n1. Проблемы с интернетом\n2. Неправильный URL модели\n3. Формат модели не поддерживается', 
+                        'Проверьте консоль разработчика для деталей'
                     );
                 });
                 
@@ -166,7 +179,7 @@
                     } catch (error) {
                         showError(
                             'Ошибка анимации', 
-                            'Не удалось запустить анимацию модели', 
+                            'Не удалось запустить анимацию модели. Проверьте:\n1. Наличие анимаций в модели\n2. Правильные имена анимаций', 
                             error.message
                         );
                     }
@@ -179,8 +192,8 @@
             if (document.querySelector('.arjs-loader').style.display !== 'none') {
                 showError(
                     'Проблема с загрузкой', 
-                    'AR-среда не загрузилась в течение ожидаемого времени', 
-                    'Проверьте разрешение на доступ к камере и подключение к интернету'
+                    'AR-среда не загрузилась в течение ожидаемого времени. Возможные причины:\n1. Медленное интернет-соединение\n2. Браузер не поддерживает WebGL\n3. Нет разрешения на доступ к камере', 
+                    'Проверьте консоль разработчика для деталей'
                 );
             }
         }, 15000); // 15 секунд
@@ -189,8 +202,17 @@
         if (!AFRAME.utils.device.checkWebGLSupport()) {
             showError(
                 'WebGL не поддерживается', 
-                'Ваш браузер не поддерживает необходимые технологии', 
-                'Попробуйте обновить браузер или использовать другое устройство'
+                'Ваш браузер не поддерживает необходимые технологии для работы AR.\nПопробуйте обновить браузер или использовать другое устройство.', 
+                'Требуется поддержка WebGL 2.0'
+            );
+        }
+        
+        // Проверка поддержки getUserMedia (доступ к камере)
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError(
+                'Доступ к камере невозможен', 
+                'Ваш браузер не поддерживает доступ к камере или эта функция отключена.\nПроверьте настройки браузера.', 
+                'Требуется поддержка MediaDevices API'
             );
         }
     </script>
