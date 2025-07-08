@@ -116,6 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         console.error(event.error);
     });
+    const scene = document.querySelector('a-scene');
+     scene.addEventListener('arjs-video-error', function() {
+        showError(
+            'Ошибка доступа к камере',
+            'Не удалось получить доступ к камере. Пожалуйста:\n1. Разрешите доступ к камере\n2. Обновите браузер\n3. Перезагрузите страницу',
+            ''
+        );
+    });
     
     // Обработка ошибок в промисах
     window.addEventListener('unhandledrejection', function(event) {
