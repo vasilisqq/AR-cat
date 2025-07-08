@@ -36,6 +36,7 @@ function resetModel() {
 }
 
 // Регистрация компонента для обработки жестов
+// Регистрация компонента для обработки жестов
 AFRAME.registerComponent('gesture-detector', {
     init: function() {
         this.el.addEventListener('click', (e) => {
@@ -55,12 +56,15 @@ AFRAME.registerComponent('gesture-detector', {
     
     placeModel: function() {
         const marker = document.getElementById('marker');
-        const plane = document.getElementById('plane');
         
         // Проверка обнаружения плоскости
-        if (!plane || !plane.object3D || !plane.object3D.position) {
+        if (!marker || !marker.object3D || !marker.object3D.position) {
             throw new Error('Плоскость не обнаружена. Продолжайте сканировать поверхность.');
         }
+        
+        // Получаем мировые координаты маркера
+        const worldPosition = new THREE.Vector3();
+        marker.object3D.getWorldPosition(worldPosition);
         
         // Создаем модель
         currentModel = document.createElement('a-entity');
@@ -69,7 +73,8 @@ AFRAME.registerComponent('gesture-detector', {
         currentModel.setAttribute('gltf-model', '#defaultModel');
         
         currentModel.setAttribute('scale', '0.5 0.5 0.5');
-        currentModel.setAttribute('position', plane.getAttribute('position'));
+        // Устанавливаем позицию модели в позицию маркера
+        currentModel.setAttribute('position', worldPosition);
         currentModel.setAttribute('rotation', '0 0 0');
         currentModel.setAttribute('animation-mixer', 'clip: Appear; loop: once');
         currentModel.setAttribute('shadow', 'receive: true');
