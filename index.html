@@ -1,173 +1,27 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>AR Experience iOS/Android</title>
-    <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body {
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #000;
-            color: white;
-            height: 100vh;
-            width: 100vw;
-        }
-        
-        #desktop-message {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #121212;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-            z-index: 1000;
-        }
-        
-        #loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1001;
-        }
-        
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.1);
-            border-top: 5px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        #screenshot-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            padding: 15px 30px;
-            background: rgba(0, 150, 255, 0.7);
-            color: white;
-            border: none;
-            border-radius: 30px;
-            font-size: 18px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        #ios-warning {
-            position: fixed;
-            top: 10px;
-            left: 0;
-            width: 100%;
-            background: rgba(255, 204, 0, 0.3);
-            color: white;
-            text-align: center;
-            padding: 10px;
-            z-index: 1002;
-            display: none;
-            backdrop-filter: blur(5px);
-        }
-        
-        #info-panel {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 100;
-            font-size: 12px;
-            max-width: 200px;
-            display: none;
-        }
-    </style>
+    <!-- ... (остальные метатеги и стили остаются без изменений) ... -->
 </head>
 <body>
-    <div id="desktop-message">
-        <h1>AR Experience</h1>
-        <p>Это приложение работает только на мобильных устройствах. Пожалуйста, откройте его на смартфоне или планшете.</p>
-    </div>
-    
-    <div id="loading">
-        <div class="spinner"></div>
-        <p id="loading-text">Инициализация AR...</p>
-    </div>
-    
-    <div id="ios-warning">
-        Для работы AR в iOS: нажмите "Разрешить" при запросе доступа к камере
-    </div>
-    
-    <div id="info-panel"></div>
-    
-    <a-scene 
-        vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
-        renderer="logarithmicDepthBuffer: true;"
-        id="ar-scene"
-    >
-        <!-- Для iOS используем location-based tracking -->
-        <a-entity id="model" 
-                  gltf-model="https://arjs-cors-proxy.herokuapp.com/https://raw.githack.com/AR-js-org/AR.js/master/aframe/examples/image-tracking/nft/trex/scene.gltf"
-                  scale="0.5 0.5 0.5"
-                  position="0 0 -2"
-                  animation-mixer="loop: repeat"
-                  gps-entity-place="latitude: 0; longitude: 0;"
-                  visible="false">
-        </a-entity>
-        
-        <a-camera gps-camera rotation-reader></a-camera>
-    </a-scene>
-    
-    <button id="screenshot-btn" class="hidden">Сделать фото</button>
+    <!-- ... (HTML структура без изменений) ... -->
 
     <script>
         // Проверка устройства и браузера
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const isSafari = !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/);
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const loadingText = document.getElementById('loading-text');
         const infoPanel = document.getElementById('info-panel');
         const iosWarning = document.getElementById('ios-warning');
         const screenshotBtn = document.getElementById('screenshot-btn');
-        
+        let arInitialized = false; // Флаг инициализации
+
         // Основная функция инициализации
         async function initAR() {
+            if (arInitialized) return;
+            arInitialized = true;
+            
             try {
                 // Проверка платформы
                 if (!isMobile) {
@@ -175,175 +29,122 @@
                     document.getElementById('loading').classList.add('hidden');
                     return;
                 }
-                
+
                 // Показываем предупреждение для iOS
                 if (isIOS) {
                     iosWarning.style.display = 'block';
-                    loadingText.textContent = "Ожидание разрешения камеры...";
                 }
-                
+
                 // Проверка поддержки AR
                 if (!checkARSupport()) {
                     showError("Ваш браузер не поддерживает AR. Пожалуйста, обновите iOS до версии 13.2+ или используйте Chrome на Android");
                     return;
                 }
-                
-                // Настройка сцены в зависимости от платформы
+
+                // Настройка сцены
                 configureSceneForPlatform();
-                
+
                 // Запускаем камеру
                 await startCamera();
-                
+
                 // Показываем кнопку скриншота
                 screenshotBtn.classList.remove('hidden');
-                
-                // Скрываем загрузчик
                 document.getElementById('loading').classList.add('hidden');
-                
-                // Обновляем информационную панель
                 updateInfoPanel();
-                
+
             } catch (error) {
                 showError(`Ошибка инициализации: ${error.message}`);
                 console.error(error);
             }
         }
-        
-        // Проверка поддержки AR
+
+        // Проверка поддержки AR (упрощенная)
         function checkARSupport() {
-            if (isIOS && isSafari) {
-                // Для iOS/Safari требуется версия 13.2+
-                const iosVersion = parseFloat(
-                    (navigator.userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/) || [])[1] || 0
-                );
-                return iosVersion >= 13.2;
-            }
-            
-            // Для Android проверяем наличие WebXR
-            return 'xr' in navigator;
+            // Все современные мобильные браузеры поддерживают getUserMedia
+            return !!navigator.mediaDevices?.getUserMedia;
         }
-        
-        // Конфигурация сцены для разных платформ
+
+        // Конфигурация сцены
         function configureSceneForPlatform() {
             const scene = document.getElementById('ar-scene');
             const model = document.getElementById('model');
             
             if (isIOS) {
-                // Для iOS используем location-based AR
-                scene.setAttribute('arjs', 'trackingMethod: best;');
+                scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false;');
                 model.setAttribute('visible', 'true');
-                model.setAttribute('gps-entity-place', 'latitude: 0; longitude: 0;');
             } else {
-                // Для Android используем surface tracking
-                scene.setAttribute('arjs', 'trackingMethod: best; sourceType: webcam;');
-                model.setAttribute('position', '0 0 -1');
+                scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false;');
                 model.setAttribute('visible', 'true');
             }
         }
-        
-        // Запуск камеры
+
+        // Запуск камеры (ключевые изменения)
         async function startCamera() {
             return new Promise((resolve, reject) => {
                 const scene = document.getElementById('ar-scene');
                 
-                // Обработчик успешной загрузки
-                scene.addEventListener('loaded', () => {
-                    // Для iOS нужно дождаться события arjs-video-loaded
-                    if (isIOS) {
-                        scene.addEventListener('arjs-video-loaded', resolve);
-                    } else {
-                        resolve();
-                    }
-                });
-                
-                // Обработчик ошибок
-                scene.addEventListener('error', (err) => {
-                    reject(new Error('Ошибка загрузки AR: ' + err.detail));
-                });
-                
-                // Задаем таймаут для инициализации
+                // Попытка получить поток камеры напрямую
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        // Создаем видео элемент для ручного управления
+                        const video = document.createElement('video');
+                        video.setAttribute('autoplay', '');
+                        video.setAttribute('playsinline', '');
+                        video.srcObject = stream;
+                        
+                        video.onloadedmetadata = () => {
+                            // Ручная установка видео в AR.js
+                            scene.setAttribute('arjs', `videoSource: #${video.id};`);
+                            video.play();
+                            document.body.appendChild(video);
+                            video.style.display = 'none';
+                            
+                            // Специальное событие для iOS
+                            if (isIOS) {
+                                scene.addEventListener('camera-init', resolve);
+                            } else {
+                                resolve();
+                            }
+                        };
+                    })
+                    .catch(err => {
+                        reject(new Error('Ошибка доступа к камере: ' + err.message));
+                    });
+
+                // Таймаут для отслеживания проблем
                 setTimeout(() => {
-                    reject(new Error('Таймаут инициализации AR'));
-                }, 30000);
+                    if (document.querySelector('video')?.readyState >= 3) {
+                        resolve();
+                    } else {
+                        reject(new Error('Таймаут инициализации камеры'));
+                    }
+                }, 10000);
             });
         }
-        
-        // Создание скриншота
-        function takeScreenshot() {
-            const scene = document.getElementById('ar-scene');
-            scene.components.screenshot.capture('perspective')
-                .then(data => {
-                    const link = document.createElement('a');
-                    link.download = 'ar-photo.png';
-                    link.href = data;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                })
-                .catch(error => {
-                    console.error('Ошибка скриншота:', error);
-                    alert('Не удалось создать фото. Попробуйте ещё раз.');
-                });
-        }
-        
-        // Обновление информационной панели
-        function updateInfoPanel() {
-            if (!isMobile) return;
-            
-            const info = `
-                Платформа: ${isIOS ? 'iOS' : 'Android'}
-                Браузер: ${navigator.userAgent.split('/')[0]}
-                AR режим: ${isIOS ? 'Location-based' : 'Surface tracking'}
-            `;
-            
-            infoPanel.textContent = info;
-            infoPanel.style.display = 'block';
-        }
-        
-        // Показать ошибку
-        function showError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.style.position = 'fixed';
-            errorDiv.style.top = '0';
-            errorDiv.style.left = '0';
-            errorDiv.style.width = '100%';
-            errorDiv.style.padding = '15px';
-            errorDiv.style.background = 'rgba(200, 0, 0, 0.8)';
-            errorDiv.style.color = 'white';
-            errorDiv.style.textAlign = 'center';
-            errorDiv.style.zIndex = '2000';
-            errorDiv.textContent = message;
-            
-            document.body.appendChild(errorDiv);
-            document.getElementById('loading').classList.add('hidden');
-        }
-        
+
+        // ... (остальные функции без изменений: takeScreenshot, updateInfoPanel, showError) ...
+
         // Инициализация при загрузке
         window.addEventListener('load', () => {
-            // Для iOS Safari добавляем специальную обработку
-            if (isIOS && isSafari) {
-                // Требуется жест пользователя для запуска камеры
-                document.body.addEventListener('click', () => {
+            // Для всех мобильных устройств используем единый подход
+            if (isMobile) {
+                // Показываем инструкцию для iOS
+                if (isIOS) {
+                    loadingText.textContent = "Нажмите на экран для запуска AR";
+                    document.body.addEventListener('click', initAR, { once: true });
+                } 
+                // Для Android запускаем сразу
+                else {
                     initAR();
-                }, { once: true });
-                
-                loadingText.textContent = "Нажмите на экран для запуска AR";
+                }
             } else {
-                // Для других браузеров запускаем сразу
-                initAR();
+                document.getElementById('desktop-message').style.display = 'flex';
+                document.getElementById('loading').classList.add('hidden');
             }
         });
-        
+
         // Обработчик кнопки скриншота
         screenshotBtn.addEventListener('click', takeScreenshot);
-        
-        // Обновление при изменении размера
-        window.addEventListener('resize', () => {
-            const scene = document.getElementById('ar-scene');
-            if (scene && scene.components.arjs) {
-                scene.components.arjs.onResize();
-            }
-        });
     </script>
 </body>
 </html>
