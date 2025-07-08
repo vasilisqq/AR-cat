@@ -52,3 +52,40 @@ body {
         @keyframes scanning {
             to { transform: rotate(360deg); }
         }
+        
+        /* Стили для сообщений об ошибках */
+        .error-message {
+            position: absolute;
+            top: 20px;
+            left: 10px;
+            right: 10px;
+            background-color: rgba(200, 0, 0, 0.85);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+            text-align: center;
+            display: none;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .error-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+        .error-details {
+            font-size: 14px;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+        .close-button {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }

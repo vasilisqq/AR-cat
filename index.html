@@ -7,7 +7,6 @@
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- Индикатор загрузки -->
@@ -15,6 +14,14 @@
         <div class="scanning-animation"></div>
         <div>Сканирую плоскость...</div>
         <div>Перемещайте камеру для обнаружения поверхности</div>
+    </div>
+    
+    <!-- Блок для отображения ошибок -->
+    <div class="error-message" id="errorMessage">
+        <button class="close-button" onclick="document.getElementById('errorMessage').style.display='none'">×</button>
+        <div class="error-title" id="errorTitle">Произошла ошибка</div>
+        <div id="errorText">Пожалуйста, попробуйте перезагрузить страницу</div>
+        <div class="error-details" id="errorDetails"></div>
     </div>
     
     <!-- Инструкция для пользователя -->
@@ -49,17 +56,69 @@
     </a-scene>
 
     <script>
+        // Функция для отображения ошибок
+        function showError(title, message, details) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorTitle = document.getElementById('errorTitle');
+            const errorText = document.getElementById('errorText');
+            const errorDetails = document.getElementById('errorDetails');
+            
+            errorTitle.textContent = title;
+            errorText.textContent = message;
+            errorDetails.textContent = details || '';
+            
+            errorMessage.style.display = 'block';
+            document.querySelector('.arjs-loader').style.display = 'none';
+        }
+        
+        // Глобальная обработка ошибок
+        window.addEventListener('error', function(event) {
+            showError(
+                'Непредвиденная ошибка', 
+                'В работе приложения произошла ошибка', 
+                `Ошибка: ${event.message} (${event.filename}:${event.lineno})`
+            );
+            console.error(event.error);
+        });
+        
+        // Обработка ошибок в промисах
+        window.addEventListener('unhandledrejection', function(event) {
+            showError(
+                'Ошибка загрузки', 
+                'Проблема при загрузке ресурсов', 
+                event.reason ? event.reason.message : 'Неизвестная ошибка'
+            );
+            console.error(event.reason);
+        });
+        
         // Скрываем лоадер после загрузки сцены
         document.querySelector('a-scene').addEventListener('loaded', function() {
             document.querySelector('.arjs-loader').style.display = 'none';
+            
+            // Проверяем поддержку AR
+            if (!AFRAME.systems.arjs.isWebXRCameraActive) {
+                showError(
+                    'AR не поддерживается', 
+                    'Ваше устройство или браузер не поддерживают AR-функции', 
+                    'Попробуйте обновить браузер или использовать другое устройство'
+                );
+            }
         });
-
+        
         // Обработка жестов
         AFRAME.registerComponent('gesture-detector', {
             init: function() {
                 this.el.addEventListener('click', (e) => {
                     if (!window.modelPlaced) {
-                        this.placeModel();
+                        try {
+                            this.placeModel();
+                        } catch (error) {
+                            showError(
+                                'Ошибка размещения модели', 
+                                'Не удалось разместить модель', 
+                                error.message
+                            );
+                        }
                     }
                 });
             },
@@ -67,6 +126,11 @@
             placeModel: function() {
                 const marker = document.getElementById('marker');
                 const plane = document.getElementById('plane');
+                
+                // Проверка обнаружения плоскости
+                if (!plane.object3D.position) {
+                    throw new Error('Плоскость не обнаружена. Продолжайте сканировать поверхность.');
+                }
                 
                 // Создаем модель
                 const model = document.createElement('a-entity');
@@ -76,6 +140,15 @@
                 model.setAttribute('rotation', '0 0 0');
                 model.setAttribute('animation-mixer', 'clip: Appear; loop: once');
                 model.setAttribute('shadow', 'receive: true');
+                
+                // Обработка ошибок загрузки модели
+                model.addEventListener('model-error', function() {
+                    showError(
+                        'Ошибка загрузки модели', 
+                        'Не удалось загрузить 3D-модель', 
+                        'Проверьте подключение к интернету или URL модели'
+                    );
+                });
                 
                 // Добавляем модель в сцену
                 this.el.appendChild(model);
@@ -88,10 +161,38 @@
                 
                 // Запускаем дополнительную анимацию через 2 секунды
                 setTimeout(() => {
-                    model.setAttribute('animation-mixer', 'clip: Idle; loop: repeat');
+                    try {
+                        model.setAttribute('animation-mixer', 'clip: Idle; loop: repeat');
+                    } catch (error) {
+                        showError(
+                            'Ошибка анимации', 
+                            'Не удалось запустить анимацию модели', 
+                            error.message
+                        );
+                    }
                 }, 2000);
             }
         });
+        
+        // Таймер для проверки загрузки
+        setTimeout(() => {
+            if (document.querySelector('.arjs-loader').style.display !== 'none') {
+                showError(
+                    'Проблема с загрузкой', 
+                    'AR-среда не загрузилась в течение ожидаемого времени', 
+                    'Проверьте разрешение на доступ к камере и подключение к интернету'
+                );
+            }
+        }, 15000); // 15 секунд
+        
+        // Проверка поддержки WebGL
+        if (!AFRAME.utils.device.checkWebGLSupport()) {
+            showError(
+                'WebGL не поддерживается', 
+                'Ваш браузер не поддерживает необходимые технологии', 
+                'Попробуйте обновить браузер или использовать другое устройство'
+            );
+        }
     </script>
     
     <!-- Ассеты - 3D модель -->
