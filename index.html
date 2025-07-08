@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR.js 3D Model Demo</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Индикатор загрузки -->
+    <div class="arjs-loader">
+        <div class="scanning-animation"></div>
+        <div>Сканирую плоскость...</div>
+        <div>Перемещайте камеру для обнаружения поверхности</div>
+    </div>
+    
+    <!-- Инструкция для пользователя -->
+    <div class="instruction" id="instruction">Наведите на плоскость и коснитесь экрана для размещения модели</div>
+    
+    <!-- AR-сцена -->
+    <a-scene 
+        vr-mode-ui="enabled: false"
+        renderer="logarithmicDepthBuffer: true; precision: medium;"
+        embedded 
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+        gesture-detector
+    >
+        <!-- Источник света -->
+        <a-entity light="type: ambient; color: #FFF; intensity: 0.8"></a-entity>
+        <a-entity light="type: directional; color: #FFF; intensity: 0.5" position="-1 2 1"></a-entity>
+        
+        <!-- Маркер для обнаружения плоскостей -->
+        <a-entity id="marker" arjs-hit-test="target: #plane"></a-entity>
+        
+        <!-- Невидимая плоскость для размещения объектов -->
+        <a-plane 
+            id="plane" 
+            position="0 0 0" 
+            rotation="-90 0 0" 
+            material="visible: false; transparent: true; opacity: 0.5"
+            arjs-anchor
+        ></a-plane>
+        
+        <!-- Камера -->
+        <a-camera-static></a-camera-static>
+    </a-scene>
+
+    <script>
+        // Скрываем лоадер после загрузки сцены
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            document.querySelector('.arjs-loader').style.display = 'none';
+        });
+
+        // Обработка жестов
+        AFRAME.registerComponent('gesture-detector', {
+            init: function() {
+                this.el.addEventListener('click', (e) => {
+                    if (!window.modelPlaced) {
+                        this.placeModel();
+                    }
+                });
+            },
+            
+            placeModel: function() {
+                const marker = document.getElementById('marker');
+                const plane = document.getElementById('plane');
+                
+                // Создаем модель
+                const model = document.createElement('a-entity');
+                model.setAttribute('gltf-model', '#model');
+                model.setAttribute('scale', '0.5 0.5 0.5');
+                model.setAttribute('position', plane.getAttribute('position'));
+                model.setAttribute('rotation', '0 0 0');
+                model.setAttribute('animation-mixer', 'clip: Appear; loop: once');
+                model.setAttribute('shadow', 'receive: true');
+                
+                // Добавляем модель в сцену
+                this.el.appendChild(model);
+                
+                // Скрываем инструкцию
+                document.getElementById('instruction').style.display = 'none';
+                
+                // Флаг что модель размещена
+                window.modelPlaced = true;
+                
+                // Запускаем дополнительную анимацию через 2 секунды
+                setTimeout(() => {
+                    model.setAttribute('animation-mixer', 'clip: Idle; loop: repeat');
+                }, 2000);
+            }
+        });
+    </script>
+    
+    <!-- Ассеты - 3D модель -->
+    <a-assets>
+        <!-- Пример модели (замените на свою) -->
+        <a-asset-item 
+            id="model" 
+            src="https://cdn.glitch.global/5e5ac1c9-8e34-4a0a-9b4c-13e0f6e6e9d0/robot.glb?v=1678203704340"
+        ></a-asset-item>
+    </a-assets>
+</body>
+</html>
