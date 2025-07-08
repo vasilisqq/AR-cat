@@ -54,17 +54,20 @@ AFRAME.registerComponent('gesture-detector', {
         });
     },
     
-    placeModel: function() {
-        const marker = document.getElementById('marker');
-        
-        // Проверка обнаружения плоскости
-        if (!marker || !marker.object3D || !marker.object3D.position) {
-            throw new Error('Плоскость не обнаружена. Продолжайте сканировать поверхность.');
-        }
-        
-        // Получаем мировые координаты маркера
-        const worldPosition = new THREE.Vector3();
-        marker.object3D.getWorldPosition(worldPosition);
+    placeModel: function(e) {
+        const intersections = e.detail.intersections;
+    if (!intersections || intersections.length === 0) {
+        throw new Error('Не удалось определить точку касания');
+    }
+
+    // Берем первую точку пересечения с плоскостью
+    const touchPoint = intersections[0].point;
+    
+    // Создаем модель в точке касания
+    currentModel = document.createElement('a-entity');
+    currentModel.setAttribute('gltf-model', '#defaultModel');
+    currentModel.setAttribute('scale', '0.5 0.5 0.5');
+    currentModel.setAttribute('position', touchPoint);
         
         // Создаем модель
         currentModel = document.createElement('a-entity');
