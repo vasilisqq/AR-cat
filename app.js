@@ -36,13 +36,12 @@ function resetModel() {
 }
 
 // Регистрация компонента для обработки жестов
-// Регистрация компонента для обработки жестов
 AFRAME.registerComponent('gesture-detector', {
     init: function() {
         this.el.addEventListener('click', (e) => {
             if (!window.modelPlaced) {
                 try {
-                    this.placeModel();
+                    this.placeModel(e); // Важно: передаем событие
                 } catch (error) {
                     showError(
                         'Ошибка размещения модели', 
@@ -55,29 +54,20 @@ AFRAME.registerComponent('gesture-detector', {
     },
     
     placeModel: function(e) {
+        // Получаем точку пересечения луча от касания с плоскостью
         const intersections = e.detail.intersections;
-    if (!intersections || intersections.length === 0) {
-        throw new Error('Не удалось определить точку касания');
-    }
+        if (!intersections || intersections.length === 0) {
+            throw new Error('Не удалось определить точку касания. Убедитесь, что вы тапнули по обнаруженной плоскости.');
+        }
 
-    // Берем первую точку пересечения с плоскостью
-    const touchPoint = intersections[0].point;
-    
-    // Создаем модель в точке касания
-    currentModel = document.createElement('a-entity');
-    currentModel.setAttribute('gltf-model', '#defaultModel');
-    currentModel.setAttribute('scale', '0.5 0.5 0.5');
-    currentModel.setAttribute('position', touchPoint);
+        // Берем первую точку пересечения
+        const touchPoint = intersections[0].point;
         
-        // Создаем модель
+        // Создаем модель в точке касания
         currentModel = document.createElement('a-entity');
-        
-        // Используем модель из вашей директории
         currentModel.setAttribute('gltf-model', '#defaultModel');
-        
         currentModel.setAttribute('scale', '0.5 0.5 0.5');
-        // Устанавливаем позицию модели в позицию маркера
-        currentModel.setAttribute('position', worldPosition);
+        currentModel.setAttribute('position', touchPoint);
         currentModel.setAttribute('rotation', '0 0 0');
         currentModel.setAttribute('animation-mixer', 'clip: Appear; loop: once');
         currentModel.setAttribute('shadow', 'receive: true');

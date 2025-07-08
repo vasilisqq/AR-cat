@@ -3,18 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>AR.js 3D Model Demo</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     <!-- Подключаем внешний JS файл -->
     <script src="app.js" defer></script>
+    <style>
+        /* Добавим стиль для курсора */
+        .cursor {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: rgba(0, 255, 0, 0.5);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+        }
+    </style>
 </head>
 <body>
     <!-- Кнопка загрузки модели -->
     <div class="model-upload-container">
         <input type="file" id="modelUpload" accept=".glb,.gltf" style="display: none;">
         <button id="uploadButton">Загрузить свою модель</button>
+        <!-- Добавим кнопку сброса модели -->
+        <button id="resetButton" style="margin-left: 10px;">Сбросить модель</button>
     </div>
 
     <!-- Индикатор загрузки -->
@@ -26,18 +46,23 @@
     
     <!-- Блок для отображения ошибок -->
     <div class="error-overlay" id="errorOverlay">
-        <!-- ... содержимое без изменений ... -->
+        <div class="error-content">
+            <h2 id="errorTitle">Ошибка</h2>
+            <p id="errorText"></p>
+            <pre id="errorDetails" style="display: none;"></pre>
+            <button id="errorClose">Закрыть</button>
+        </div>
     </div>
     
     <!-- Инструкция для пользователя -->
-    <div class="instruction" id="instruction">Наведите на плоскость и коснитесь экрана для размещения модели 7</div>
+    <div class="instruction" id="instruction">Наведите на плоскость и коснитесь экрана для размещения модели 8</div>
     
     <!-- AR-сцена -->
     <a-scene 
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; precision: medium;"
         embedded 
-        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; planeDetection: best;"
         gesture-detector
         id="arScene"
     >
@@ -46,19 +71,20 @@
         <a-entity light="type: directional; color: #FFF; intensity: 0.5" position="-1 2 1"></a-entity>
         
         <!-- Маркер для обнаружения плоскостей -->
-        <a-entity id="marker" arjs-hit-test="target: #plane"></a-entity>
+        <a-entity 
+            id="marker" 
+            class="clickable"
+            arjs-anchor="type: plane"
+        ></a-entity>
         
-        <!-- Невидимая плоскость для размещения объектов -->
-        <a-plane 
-            id="plane" 
-            position="0 0 0" 
-            rotation="-90 0 0" 
-            material="visible: false; transparent: true; opacity: 0.5"
-            arjs-anchor
-        ></a-plane>
-        
-        <!-- Камера -->
-        <a-camera-static></a-camera-static>
+        <!-- Камера с курсором -->
+        <a-camera>
+            <!-- Курсор для обнаружения касаний -->
+            <a-entity 
+                cursor="rayOrigin: mouse" 
+                raycaster="objects: .clickable; far: 100;"
+            ></a-entity>
+        </a-camera>
     </a-scene>
 
     <!-- Ассеты - 3D модель по умолчанию -->
@@ -68,5 +94,8 @@
             src="models/cat_anim.glb"
         ></a-asset-item>
     </a-assets>
+
+    <!-- Видимый курсор для пользователя -->
+    <div class="cursor"></div>
 </body>
 </html>
